@@ -52,6 +52,7 @@ class FabricResponse(BaseModel):
 class AIPredict(BaseModel):
     warna_kain: str
     jenis_kain: str
+    motif_kain: str  # Ditambahkan parameter motif_kain
 
 class AIResponse(BaseModel):
     motif: str
@@ -131,8 +132,8 @@ def calculate_similarity_score(user_input: dict, fabric_data: dict) -> tuple:
     similarity_percentage = (score / total_attributes * 100) if total_attributes > 0 else 0
     return similarity_percentage, score, total_attributes
 
-def get_ai_predictions(warna_kain: str, jenis_kain: str) -> List[AIResponse]:
-    """Get AI predictions for motif based on color and fabric type"""
+def get_ai_predictions(warna_kain: str, jenis_kain: str, motif_kain: str) -> List[AIResponse]:
+    """Get AI predictions based on color, fabric type, and motif"""
     try:
         if not model_package or 'model' not in model_package:
             return []
@@ -142,12 +143,13 @@ def get_ai_predictions(warna_kain: str, jenis_kain: str) -> List[AIResponse]:
         motif_encoder = model_package['motif_encoder']
         model = model_package['model']
         
-        # Transform input
+        # Transform input - semua tiga parameter digunakan
         warna_encoded = warna_encoder.transform([warna_kain])[0]
         jenis_encoded = jenis_encoder.transform([jenis_kain])[0]
+        motif_encoded = motif_encoder.transform([motif_kain])[0]
         
-        # Predict
-        input_data = [[warna_encoded, jenis_encoded]]
+        # Predict menggunakan ketiga parameter sebagai input
+        input_data = [[warna_encoded, jenis_encoded, motif_encoded]]
         
         try:
             prediction_proba = model.predict_proba(input_data)[0]
@@ -243,10 +245,10 @@ async def get_recommendations(query: FabricQuery):
     max_results = min(query.max_results or 20, 50)
     recommendations = recommendations[:max_results]
     
-    # Get AI predictions if only color and type provided
+    # Get AI predictions jika semua tiga parameter tersedia
     ai_predictions = []
-    if query.warna_kain and query.jenis_kain and not query.motif_kain:
-        ai_predictions = get_ai_predictions(query.warna_kain, query.jenis_kain)
+    if query.warna_kain and query.jenis_kain and query.motif_kain:
+        ai_predictions = get_ai_predictions(query.warna_kain, query.jenis_kain, query.motif_kain)
     
     return RecommendationResult(
         recommendations=recommendations,
@@ -257,11 +259,11 @@ async def get_recommendations(query: FabricQuery):
 
 @app.post("/predict", response_model=List[AIResponse])
 async def predict_motif(query: AIPredict):
-    """Predict motif based on color and fabric type using AI"""
+    """Predict based on color, fabric type, and motif using AI"""
     if not model_package:
         raise HTTPException(status_code=500, detail="Model not loaded")
     
-    predictions = get_ai_predictions(query.warna_kain, query.jenis_kain)
+    predictions = get_ai_predictions(query.warna_kain, query.jenis_kain, query.motif_kain)
     
     if not predictions:
         raise HTTPException(status_code=400, detail="Unable to generate predictions")
