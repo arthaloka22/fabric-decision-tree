@@ -70,7 +70,7 @@ async def load_model():
     
     try:
         # Load model package
-        model_path = Path("fabric_recommendation_model.pkl")
+        model_path = Path("./fabric_recommendation_model.pkl")
         if model_path.exists():
             with open(model_path, 'rb') as f:
                 model_package = pickle.load(f)
