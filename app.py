@@ -145,9 +145,16 @@ def get_ai_predictions(warna_kain: str, jenis_kain: str, motif_kain: str) -> Lis
         model = model_package['model']
         
         # Transform input - semua tiga parameter digunakan
-        warna_encoded = warna_encoder.transform([warna_kain])[0]
-        jenis_encoded = jenis_encoder.transform([jenis_kain])[0]
-        motif_encoded = motif_encoder.transform([motif_kain])[0]
+        # warna_encoded = warna_encoder.transform([warna_kain])[0]
+        # jenis_encoded = jenis_encoder.transform([jenis_kain])[0]
+        # motif_encoded = motif_encoder.transform([motif_kain])[0]
+        try:
+            warna_encoded = warna_encoder.transform([warna_kain])[0]
+            jenis_encoded = jenis_encoder.transform([jenis_kain])[0]
+            motif_encoded = motif_encoder.transform([motif_kain])[0]
+        except Exception as e:
+            print("Encoding error:", e)
+            raise HTTPException(status_code=400, detail="Encoding gagal, pastikan input valid")
         
         # Predict menggunakan ketiga parameter sebagai input
         input_data = [[warna_encoded, jenis_encoded, motif_encoded]]
